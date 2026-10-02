@@ -609,6 +609,9 @@ export function useSettingsRestore(onRestored?: () => void) {
       DEFAULT_UNIFIED_SETTINGS.enableProviderUpdateChecks
         ? ["Provider update checks"]
         : []),
+      ...(settings.enablePromptRefinement !== DEFAULT_UNIFIED_SETTINGS.enablePromptRefinement
+        ? ["Prompt refinement"]
+        : []),
       ...(settings.continueThreadsAfterServerUpdate !==
       DEFAULT_UNIFIED_SETTINGS.continueThreadsAfterServerUpdate
         ? ["Continue threads after restarts"]
@@ -684,6 +687,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       settings.panelAnimationDurationMs,
       settings.responseStreamingMode,
       settings.enableProviderUpdateChecks,
+      settings.enablePromptRefinement,
       settings.continueThreadsAfterServerUpdate,
       settings.sidebarAutoSettleAfterDays,
       settings.sidebarAutoSettleOnMerge,
@@ -791,6 +795,7 @@ export function useSettingsRestore(onRestored?: () => void) {
       sidebarAutoSettleOnMerge: DEFAULT_UNIFIED_SETTINGS.sidebarAutoSettleOnMerge,
       responseStreamingMode: DEFAULT_UNIFIED_SETTINGS.responseStreamingMode,
       enableProviderUpdateChecks: DEFAULT_UNIFIED_SETTINGS.enableProviderUpdateChecks,
+      enablePromptRefinement: DEFAULT_UNIFIED_SETTINGS.enablePromptRefinement,
       continueThreadsAfterServerUpdate: DEFAULT_UNIFIED_SETTINGS.continueThreadsAfterServerUpdate,
       backgroundActivity: DEFAULT_UNIFIED_SETTINGS.backgroundActivity,
       backgroundActivityProfile: DEFAULT_UNIFIED_SETTINGS.backgroundActivityProfile,
@@ -3157,7 +3162,7 @@ export function GeneralSettingsPanel() {
           serverScoped
           settingKeys={["textGenerationModelSelection"]}
           {...searchableSetting("text-generation-model")}
-          description="Used for thread titles and other generated text on connected devices with this provider. Source control can override it."
+          description="Used for thread titles, prompt refinement, and other generated text on connected devices with this provider. Source control can override it."
           resetAction={
             hasServerTargets && isTextGenerationModelDirty ? (
               <SettingResetButton
@@ -3258,6 +3263,35 @@ export function GeneralSettingsPanel() {
                 ) : null}
               </div>
             )
+          }
+        />
+
+        <SettingsRow
+          serverScoped
+          settingKeys={["enablePromptRefinement"]}
+          {...searchableSetting("prompt-refinement")}
+          description="Show a button beside Send that rewrites your draft with the text generation model. You review the rewrite before sending."
+          resetAction={
+            settings.enablePromptRefinement !== DEFAULT_UNIFIED_SETTINGS.enablePromptRefinement ? (
+              <SettingResetButton
+                label="prompt refinement"
+                onClick={() =>
+                  updateSettings({
+                    enablePromptRefinement: DEFAULT_UNIFIED_SETTINGS.enablePromptRefinement,
+                  })
+                }
+              />
+            ) : null
+          }
+          control={
+            <ScopedSwitch
+              settingKeys={["enablePromptRefinement"]}
+              checked={settings.enablePromptRefinement}
+              onCheckedChange={(checked) =>
+                updateSettings({ enablePromptRefinement: Boolean(checked) })
+              }
+              aria-label="Refine prompts"
+            />
           }
         />
       </SettingsSection>

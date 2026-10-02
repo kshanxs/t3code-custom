@@ -10072,6 +10072,11 @@ export default function ChatView(props: ChatViewProps) {
                             pullRequestProjectId={
                               supportsPullRequests ? (activeProject?.id ?? null) : null
                             }
+                            supportsPromptRefinement={
+                              attachmentEnvironmentConfig?.environment.capabilities
+                                .promptRefinement === true
+                            }
+                            activeProjectId={activeProject?.id ?? null}
                             pullRequestRepository={
                               supportsPullRequests ? activeProjectRepository : null
                             }

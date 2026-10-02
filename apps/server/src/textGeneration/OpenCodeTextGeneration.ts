@@ -18,6 +18,7 @@ import {
   buildBranchNamePrompt,
   buildCommitMessagePrompt,
   buildPrContentPrompt,
+  buildPromptRefinementPrompt,
   buildThreadTitlePrompt,
 } from "./TextGenerationPrompts.ts";
 import * as TextGeneration from "./TextGeneration.ts";
@@ -34,6 +35,7 @@ const OpenCodeTextGenerationOperation = Schema.Literals([
   "generatePrContent",
   "generateBranchName",
   "generateThreadTitle",
+  "refinePrompt",
 ]);
 
 type OpenCodeTextGenerationOperation = typeof OpenCodeTextGenerationOperation.Type;
@@ -453,10 +455,26 @@ export const makeOpenCodeTextGeneration = Effect.fn("makeOpenCodeTextGeneration"
       };
     });
 
+  const refinePrompt: TextGeneration.TextGeneration["Service"]["refinePrompt"] = Effect.fn(
+    "OpenCodeTextGeneration.refinePrompt",
+  )(function* (input) {
+    const { prompt, outputSchema } = buildPromptRefinementPrompt({ prompt: input.prompt });
+    const generated = yield* runOpenCodeJson({
+      operation: "refinePrompt",
+      cwd: input.cwd,
+      prompt,
+      outputSchemaJson: outputSchema,
+      modelSelection: input.modelSelection,
+    });
+
+    return { prompt: generated.prompt.trim() };
+  });
+
   return {
     generateCommitMessage,
     generatePrContent,
     generateBranchName,
     generateThreadTitle,
+    refinePrompt,
   } satisfies TextGeneration.TextGeneration["Service"];
 });

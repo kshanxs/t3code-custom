@@ -1,6 +1,12 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { NonNegativeInt, PositiveInt, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
+import {
+  NonNegativeInt,
+  PositiveInt,
+  ProjectId,
+  ThreadId,
+  TrimmedNonEmptyString,
+} from "./baseSchemas.ts";
 import { SourceControlProviderError, SourceControlProviderInfo } from "./sourceControl.ts";
 import { VcsDriverKind } from "./vcs.ts";
 
@@ -367,6 +373,21 @@ export class TextGenerationError extends Schema.TaggedError<TextGenerationError>
     return `Text generation failed in ${this.operation}: ${this.detail}`;
   }
 }
+
+/** Drafts past this are left alone: a small model rewrites them badly and slowly. */
+export const PROMPT_REFINEMENT_MAX_INPUT_CHARS = 20_000;
+
+export const PromptRefinementInput = Schema.Struct({
+  prompt: TrimmedNonEmptyStringSchema.check(Schema.isMaxLength(PROMPT_REFINEMENT_MAX_INPUT_CHARS)),
+  /** Selects the project's text generation model override, when it has one. */
+  projectId: Schema.optional(ProjectId),
+});
+export type PromptRefinementInput = typeof PromptRefinementInput.Type;
+
+export const PromptRefinementResult = Schema.Struct({
+  prompt: Schema.String,
+});
+export type PromptRefinementResult = typeof PromptRefinementResult.Type;
 
 export class GitManagerError extends Schema.TaggedError<GitManagerError>()("GitManagerError", {
   operation: Schema.String,

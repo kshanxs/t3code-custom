@@ -1,11 +1,13 @@
 import { memo, type PointerEventHandler } from "react";
-import { ChevronDownIcon, ChevronLeftIcon } from "lucide-react";
+import type { PromptRefinementPhase } from "@t3tools/client-runtime/prompt-refinement";
+import { ChevronDownIcon, ChevronLeftIcon, Undo2Icon, WandSparklesIcon } from "lucide-react";
 import { useEnvironmentIdentificationMode } from "~/hooks/useSettings";
 import { cn } from "~/lib/utils";
 import { StageBackdropButtonArt, useSidebarStageBackdropVariant } from "../SidebarStageBackdrop";
 import { Button } from "../ui/button";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { Spinner } from "../ui/spinner";
+import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { composerFloatingLayerProps } from "./composerEventScope";
 
 interface PendingActionState {
@@ -29,6 +31,9 @@ interface ComposerPrimaryActionsProps {
   isPreparingWorktree: boolean;
   hasSendableContent: boolean;
   preserveComposerFocusOnPointerDown?: boolean;
+  /** Absent hides the refine action: turned off, unsupported, or no prose to rewrite. */
+  promptRefinement?: { phase: PromptRefinementPhase; disabled: boolean } | null;
+  onTogglePromptRefinement?: () => void;
   onPreviousPendingQuestion: () => void;
   onInterrupt: () => void;
   onImplementPlanInNewThread: () => void;
@@ -57,6 +62,12 @@ const formatPendingPrimaryActionLabel = (input: {
 const messageActionPillClassName =
   "inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-message-action font-medium text-base text-message-action-foreground shadow-xs shadow-message-action/24 outline-none hover:bg-message-action-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-64 disabled:shadow-none sm:text-sm";
 
+const PROMPT_REFINEMENT_LABELS: Record<PromptRefinementPhase, string> = {
+  idle: "Refine prompt",
+  refining: "Cancel refining",
+  refined: "Restore original prompt",
+};
+
 const preventPointerFocus: PointerEventHandler<HTMLElement> = (event) => {
   event.preventDefault();
 };
@@ -74,6 +85,8 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   isPreparingWorktree,
   hasSendableContent,
   preserveComposerFocusOnPointerDown = false,
+  promptRefinement,
+  onTogglePromptRefinement,
   onPreviousPendingQuestion,
   onInterrupt,
   onImplementPlanInNewThread,
@@ -265,8 +278,41 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
     </button>
   );
 
+  // One button for the whole round trip: refine, cancel while it runs, then
+  // restore the original until the draft is edited.
+  const refineButton = promptRefinement ? (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-64 sm:h-8 sm:w-8"
+            {...pointerFocusProps}
+            disabled={promptRefinement.disabled || isSendBusy}
+            onClick={onTogglePromptRefinement}
+            aria-label={PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}
+          />
+        }
+      >
+        {promptRefinement.phase === "refining" ? (
+          <Spinner size="sm" aria-hidden="true" />
+        ) : promptRefinement.phase === "refined" ? (
+          <Undo2Icon className="size-4" aria-hidden="true" />
+        ) : (
+          <WandSparklesIcon className="size-4" aria-hidden="true" />
+        )}
+      </TooltipTrigger>
+      <TooltipPopup side="top">{PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}</TooltipPopup>
+    </Tooltip>
+  ) : null;
+
   if (!isRunning) {
-    return sendButton;
+    return (
+      <>
+        {refineButton}
+        {sendButton}
+      </>
+    );
   }
 
   // While a turn runs, a sendable draft queues for the next tool boundary, so
@@ -274,6 +320,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   return (
     <>
       {renderStopGenerationButton(false)}
+      {hasSendableContent ? refineButton : null}
       {hasSendableContent ? sendButton : null}
     </>
   );

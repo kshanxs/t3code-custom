@@ -386,6 +386,20 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       />
                     ))}
                   </SettingsSection>
+                  <SettingsSection title="Composer">
+                    <FanoutSwitchRow
+                      icon={{ ios: "wand.and.stars", android: "auto_awesome" }}
+                      label="Refine prompt"
+                      subtitle={
+                        projectSelected
+                          ? "Environment-wide setting. Select All projects to change it."
+                          : "Show a button beside Send that rewrites your draft with the text generation model."
+                      }
+                      value={uniform("enablePromptRefinement")}
+                      disabled={disabledFor("enablePromptRefinement")}
+                      onValueChange={(value) => write({ enablePromptRefinement: value })}
+                    />
+                  </SettingsSection>
                   <SettingsSection title="Preview browser">
                     <FanoutSwitchRow
                       icon="globe"
