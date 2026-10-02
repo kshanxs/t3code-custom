@@ -1093,6 +1093,10 @@ export function createServerEnvironmentAtoms<R, E>(
         key: ({ environmentId, input }) => JSON.stringify([environmentId, input]),
       },
     }),
+    refinePrompt: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:server:refine-prompt",
+      tag: WS_METHODS.serverRefinePrompt,
+    }),
     refreshProviders: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:refresh-providers",
       tag: WS_METHODS.serverRefreshProviders,

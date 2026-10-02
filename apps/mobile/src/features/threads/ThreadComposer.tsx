@@ -91,6 +91,11 @@ import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import type { RemoteClientConnectionState } from "../../lib/connection";
 import { resolveProviderOptionDescriptors } from "../../lib/providerOptions";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
+import {
+  ComposerRefineButton,
+  usePromptRefinement,
+  useRefiningPromptStyle,
+} from "./prompt-refinement";
 import { useComposerCommandMenu } from "./use-composer-command-menu";
 import {
   ComposerDictationCancelAction,
@@ -332,6 +337,15 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
     );
   }, [props.serverConfig, props.selectedThread.modelSelection.instanceId]);
   const composerOwnerKey = scopedThreadKey(props.environmentId, props.selectedThread.id);
+  const promptRefinement = usePromptRefinement({
+    serverConfig: props.serverConfig,
+    environmentId: props.environmentId,
+    projectId: props.selectedThread.projectId,
+    targetKey: composerOwnerKey,
+    prompt: props.draftMessage,
+    onChangePrompt: props.onChangeDraftMessage,
+  });
+  const refiningPromptStyle = useRefiningPromptStyle(promptRefinement.phase);
   const openDraftDocument = (attachment: ComposerDocumentAttachment) => {
     Keyboard.dismiss();
     navigation.navigate("ThreadAttachment", {
@@ -745,6 +759,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
             <Animated.View
               className={isExpanded ? "px-[14px]" : "min-w-0 flex-1 px-[4px]"}
               layout={COMPOSER_LAYOUT_TRANSITION}
+              style={refiningPromptStyle}
             >
               <ComposerEditor
                 draftKey={composerOwnerKey}
@@ -981,6 +996,9 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                   </View>
                 )}
                 <View className="shrink-0 flex-row items-center">
+                  {voicePresentation.showsSend && !showStopAction ? (
+                    <ComposerRefineButton control={promptRefinement} />
+                  ) : null}
                   <ComposerDictationPrimaryAction
                     state={voiceInput.state}
                     presentation={voicePresentation}

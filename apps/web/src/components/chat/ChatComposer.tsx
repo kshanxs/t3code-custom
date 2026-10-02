@@ -255,6 +255,8 @@ import { ComposerPendingApprovalActions } from "./ComposerPendingApprovalActions
 import { CompactComposerControlsMenu } from "./CompactComposerControlsMenu";
 import { ComposerImageThumbnail } from "./ComposerImageThumbnail";
 import { ComposerPrimaryActions } from "./ComposerPrimaryActions";
+import { usePromptRefinement } from "./usePromptRefinement";
+import { canRefinePrompt } from "@t3tools/client-runtime/prompt-refinement";
 import { ComposerPendingApprovalPanel } from "./ComposerPendingApprovalPanel";
 import { ComposerPendingUserInputPanel } from "./ComposerPendingUserInputPanel";
 import { ComposerPlanFollowUpBanner } from "./ComposerPlanFollowUpBanner";
@@ -1211,6 +1213,10 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
   isEnvironmentUnavailable: boolean;
   hasSendableContent: boolean;
   preserveComposerFocusOnPointerDown?: boolean;
+  promptRefinement: NonNullable<
+    ComponentProps<typeof ComposerPrimaryActions>["promptRefinement"]
+  > | null;
+  onTogglePromptRefinement: () => void;
   onPreviousPendingQuestion: () => void;
   onInterrupt: () => void;
   onImplementPlanInNewThread: () => void;
@@ -1244,6 +1250,8 @@ const ComposerFooterPrimaryActions = memo(function ComposerFooterPrimaryActions(
         isPreparingWorktree={props.isPreparingWorktree}
         hasSendableContent={props.hasSendableContent}
         preserveComposerFocusOnPointerDown={props.preserveComposerFocusOnPointerDown ?? false}
+        promptRefinement={props.promptRefinement}
+        onTogglePromptRefinement={props.onTogglePromptRefinement}
         onPreviousPendingQuestion={props.onPreviousPendingQuestion}
         onInterrupt={props.onInterrupt}
         onImplementPlanInNewThread={props.onImplementPlanInNewThread}
@@ -1420,6 +1428,9 @@ export interface ChatComposerProps {
   gitCwd: string | null;
   pullRequestProjectId: ProjectId | null;
   pullRequestRepository: string | null;
+  supportsPromptRefinement: boolean;
+  /** Picks the project's text generation model when a draft is refined. */
+  activeProjectId: ProjectId | null;
   restingControlsHost: HTMLDivElement | null;
   restingControlsHaveLeadingContext: boolean;
   onRestingControlsVisibilityChange: (visible: boolean) => void;
@@ -1544,6 +1555,8 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     terminalOpen,
     gitCwd,
     pullRequestProjectId,
+    supportsPromptRefinement,
+    activeProjectId,
     pullRequestRepository,
     restingControlsHost,
     restingControlsHaveLeadingContext,
@@ -2553,6 +2566,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
       (supportsQuestionAttachments &&
         activePendingProgress.activeQuestion?.allowCustomAnswer !== false));
   const composerFooterHasWideActions = showPlanFollowUpPrompt || activePendingProgress !== null;
+  // The plan follow-up and pending-question states own the primary action row.
+  const showPromptRefinement =
+    supportsPromptRefinement &&
+    settings.enablePromptRefinement &&
+    !showPlanFollowUpPrompt &&
+    activePendingProgress === null &&
+    !isComposerApprovalState &&
+    stripInlineContextReferences(prompt).trim().length > 0;
   const composerFooterActionLayoutKey = useMemo(() => {
     if (activePendingProgress) {
       return `pending:${activePendingProgress.questionIndex}:${activePendingProgress.isLastQuestion}:${activePendingIsResponding}`;
@@ -2563,7 +2584,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     if (showPlanFollowUpPrompt) {
       return prompt.trim().length > 0 ? "plan:refine" : "plan:implement";
     }
-    return `idle:${composerSendState.hasSendableContent}:${isSendBusy}:${isConnecting}:${isPreparingWorktree}`;
+    return `idle:${composerSendState.hasSendableContent}:${isSendBusy}:${isConnecting}:${isPreparingWorktree}:${showPromptRefinement}`;
   }, [
     activePendingIsResponding,
     activePendingProgress,
@@ -2574,6 +2595,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     phase,
     prompt,
     showPlanFollowUpPrompt,
+    showPromptRefinement,
   ]);
 
   const isComposerMenuLoading =
@@ -3940,6 +3962,15 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
     },
     [composerDraftTarget, promptRef, setComposerDraftPrompt, setComposerTrigger],
   );
+
+  const promptRefinement = usePromptRefinement({
+    environmentId,
+    projectId: activeProjectId,
+    targetKey: promptHistoryTargetKey,
+    prompt,
+    promptRef,
+    replacePrompt: replacePromptFromHistory,
+  });
 
   const navigatePromptHistory = useCallback(
     (direction: "backward" | "forward", event: KeyboardEvent): boolean => {
@@ -6891,6 +6922,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     skills={selectedProviderSkills}
                     containerClassName={cn(isComposerResting && "min-w-0 flex-1")}
                     className={cn(
+                      showPromptRefinement &&
+                        promptRefinement.phase !== "idle" &&
+                        `composer-prompt-${promptRefinement.phase}`,
                       showMobilePendingAnswerActions && "max-sm:pb-12",
                       isComposerResting &&
                         "my-0 max-h-8 min-h-8 overflow-hidden py-0 whitespace-pre! leading-8",
@@ -7066,6 +7100,17 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     isPreparingWorktree={isPreparingWorktree}
                     hasSendableContent={composerSendState.hasSendableContent}
                     preserveComposerFocusOnPointerDown={isMobileViewport || isComposerResting}
+                    promptRefinement={
+                      showPromptRefinement
+                        ? {
+                            phase: promptRefinement.phase,
+                            disabled:
+                              promptRefinement.phase === "idle" &&
+                              (!canRefinePrompt(prompt) || environmentUnavailable !== null),
+                          }
+                        : null
+                    }
+                    onTogglePromptRefinement={promptRefinement.toggle}
                     onPreviousPendingQuestion={onPreviousActivePendingUserInputQuestion}
                     onInterrupt={handleInterruptPrimaryAction}
                     onImplementPlanInNewThread={handleImplementPlanInNewThreadPrimaryAction}

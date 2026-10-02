@@ -469,6 +469,13 @@ export const SETTINGS_SEARCH_ITEMS = [
     searchTerms: ["generated thread titles source control content default provider"],
   },
   {
+    id: "prompt-refinement",
+    title: "Prompt refinement",
+    to: "/settings/general",
+    scope: "environment-defaults",
+    searchTerms: ["refine rewrite improve enhance polish draft message composer button model"],
+  },
+  {
     id: "diagnostics",
     title: "Diagnostics",
     to: "/settings/general",

@@ -80,6 +80,9 @@ import {
   GitPreparePullRequestThreadResult,
   VcsPullInput,
   GitPullRequestRefInput,
+  PromptRefinementInput,
+  PromptRefinementResult,
+  TextGenerationError,
   VcsPullResult,
   VcsRemoveWorktreeInput,
   GitResolvePullRequestResult,
@@ -403,6 +406,7 @@ export const WS_METHODS = {
   serverGetBackgroundPolicy: "server.getBackgroundPolicy",
   serverGetUsageSummary: "server.getUsageSummary",
   serverRefreshUsageRates: "server.refreshUsageRates",
+  serverRefinePrompt: "server.refinePrompt",
 
   // Cloud environment methods
   cloudGetRelayClientStatus: "cloud.getRelayClientStatus",
@@ -687,6 +691,16 @@ const WsServerGetUsageSummaryRpc = Rpc.make(WS_METHODS.serverGetUsageSummary, {
   payload: UsageSummaryInput,
   success: UsageSummary,
   error: Schema.Union([EnvironmentAuthorizationError, UsageReadError]),
+});
+
+/**
+ * Rewrites a composer draft with the text generation model. The draft is
+ * returned, never sent: the client swaps it into the composer for review.
+ */
+const WsServerRefinePromptRpc = Rpc.make(WS_METHODS.serverRefinePrompt, {
+  payload: PromptRefinementInput,
+  success: PromptRefinementResult,
+  error: Schema.Union([EnvironmentAuthorizationError, TextGenerationError]),
 });
 
 /**
@@ -1485,6 +1499,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsServerRetryResourceTelemetryRpc,
   WsServerGetUsageSummaryRpc,
   WsServerRefreshUsageRatesRpc,
+  WsServerRefinePromptRpc,
   WsServerSignalProcessRpc,
   WsServerReportClientActivityRpc,
   WsServerReportHostPowerStateRpc,

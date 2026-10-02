@@ -2119,6 +2119,39 @@ code {
   }
 }
 
+/* Prompt refinement. The draft lifts and dims while the model rewrites it,
+   then the rewrite floats up into its place. Each runs once and holds, so
+   nothing repaints while the request is in flight. */
+@media (prefers-reduced-motion: no-preference) {
+  .composer-prompt-refining {
+    animation: composer-prompt-float-away 320ms ease-out forwards;
+  }
+
+  .composer-prompt-refined {
+    animation: composer-prompt-float-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-prompt-refining {
+    opacity: 0.5;
+  }
+}
+
+@keyframes composer-prompt-float-away {
+  to {
+    opacity: 0.5;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes composer-prompt-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 /* Let the sortable rows open label clearance before painting the dividers.
    This runs once per pickup; rows retain dnd-kit's normal 200ms transitions. */
 .sidebar-drag-boundary-label {

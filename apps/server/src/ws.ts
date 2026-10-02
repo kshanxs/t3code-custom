@@ -142,6 +142,7 @@ import * as VcsProvisioningService from "./vcs/VcsProvisioningService.ts";
 import * as GitWorkflowService from "./git/GitWorkflowService.ts";
 import { linkCreatedPullRequest } from "./git/linkCreatedPullRequest.ts";
 import * as ReviewService from "./review/ReviewService.ts";
+import * as PromptRefinement from "./textGeneration/PromptRefinement.ts";
 import * as ProjectSetupScriptRunner from "./project/ProjectSetupScriptRunner.ts";
 import * as ProjectCloneTracker from "./project/ProjectCloneTracker.ts";
 import * as NewProject from "./project/NewProject.ts";
@@ -559,6 +560,7 @@ const makeWsRpcLayer = (
       const remoteOpenTargets = yield* RemoteOpenTargets.RemoteOpenTargets;
       const gitWorkflow = yield* GitWorkflowService.GitWorkflowService;
       const review = yield* ReviewService.ReviewService;
+      const promptRefinement = yield* PromptRefinement.PromptRefinement;
       const vcsProvisioning = yield* VcsProvisioningService.VcsProvisioningService;
       const vcsStatusBroadcaster = yield* VcsStatusBroadcaster.VcsStatusBroadcaster;
       const terminalManager = yield* TerminalManager.TerminalManager;
@@ -2948,6 +2950,10 @@ const makeWsRpcLayer = (
           ),
         [WS_METHODS.serverGetUsageSummary]: (input) =>
           observeRpcEffect(WS_METHODS.serverGetUsageSummary, usage.readSummary(input), {
+            "rpc.aggregate": "server",
+          }),
+        [WS_METHODS.serverRefinePrompt]: (input) =>
+          observeRpcEffect(WS_METHODS.serverRefinePrompt, promptRefinement.refine(input), {
             "rpc.aggregate": "server",
           }),
         [WS_METHODS.serverRefreshUsageRates]: (_input) =>

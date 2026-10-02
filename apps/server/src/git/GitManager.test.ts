@@ -312,6 +312,7 @@ function createTextGeneration(
       Effect.succeed({
         title: "Update workflow",
       }),
+    refinePrompt: (input) => Effect.succeed({ prompt: input.prompt }),
     ...overrides,
   };
 
@@ -360,6 +361,7 @@ function createTextGeneration(
             }),
         ),
       ),
+    refinePrompt: implementation.refinePrompt,
   };
 }
 

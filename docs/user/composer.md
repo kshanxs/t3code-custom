@@ -32,6 +32,22 @@ also send files to T3 Code through another app's system share sheet.
 
 See [images and videos](#images-and-videos-in-messages) for previewing and saving media.
 
+## Refine a draft
+
+Use the wand button beside Send to have a model rewrite your draft so it is clearer
+for the agent. The rewrite replaces the draft in the composer and is never sent for
+you. Until you edit it, the same button restores your original. Editing the draft
+or pressing the button again while it works cancels the rewrite.
+
+Attached files and other inline context stay in place; a rewrite that would drop
+one is discarded. Drafts over 20,000 characters cannot be refined.
+
+Refinement uses the environment's text generation model, the same one that names
+threads. Choose a small, fast model for it in **Settings → General → Text
+generation**, and turn the button off there with **Prompt refinement**. On mobile,
+the switch is under **Agent behavior** in the environment's settings. The setting
+applies to every device connected to that environment.
+
 ## Send while the agent is working
 
 On web and desktop, a message sent during a running turn waits at the end of the conversation as a

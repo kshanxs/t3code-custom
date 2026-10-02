@@ -69,6 +69,11 @@ import { COMPOSER_LAYOUT_TRANSITION, ComposerSurface } from "./ThreadComposer";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
 import { useComposerCommandMenu } from "./use-composer-command-menu";
 import {
+  ComposerRefineButton,
+  usePromptRefinement,
+  useRefiningPromptStyle,
+} from "./prompt-refinement";
+import {
   ComposerDictationCancelAction,
   ComposerDictationPrimaryAction,
   ComposerDictationStatus,
@@ -434,6 +439,15 @@ export function NewTaskDraftScreen(props: {
   const isImportingContext = flow.draftKey ? contextImports[flow.draftKey] === true : false;
   const isComposerInteractionLocked =
     isIncomingShareTransferPending || flow.submitting || isImportingContext;
+  const promptRefinement = usePromptRefinement({
+    serverConfig: selectedEnvironmentServerConfig,
+    environmentId: selectedProject?.environmentId ?? null,
+    projectId: selectedProject?.id ?? null,
+    targetKey: flow.draftKey ?? "",
+    prompt: flow.prompt,
+    onChangePrompt: flow.setPrompt,
+  });
+  const refiningPromptStyle = useRefiningPromptStyle(promptRefinement.phase);
   // Also guard while a submit is in flight: an Android back press or iOS
   // Cancel would otherwise abandon the screen while the task still starts.
   // T3 owns /usage-limits only where Limits has data for the selected provider.
@@ -1677,7 +1691,9 @@ export function NewTaskDraftScreen(props: {
           </View>
         ) : null}
 
-        <View className="px-[14px]">{promptEditor}</View>
+        <Animated.View className="px-[14px]" style={refiningPromptStyle}>
+          {promptEditor}
+        </Animated.View>
         <View className="h-1" />
 
         <Animated.View layout={COMPOSER_LAYOUT_TRANSITION} collapsable={false}>
@@ -1750,6 +1766,12 @@ export function NewTaskDraftScreen(props: {
                   </View>
                 </>
               )}
+              {voicePresentation.showsSend ? (
+                <ComposerRefineButton
+                  control={promptRefinement}
+                  disabled={isComposerInteractionLocked}
+                />
+              ) : null}
               <ComposerDictationPrimaryAction
                 state={voiceInput.state}
                 presentation={voicePresentation}
