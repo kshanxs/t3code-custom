@@ -31,8 +31,12 @@ interface ComposerPrimaryActionsProps {
   isPreparingWorktree: boolean;
   hasSendableContent: boolean;
   preserveComposerFocusOnPointerDown?: boolean;
-  /** Absent hides the refine action: turned off, unsupported, or no prose to rewrite. */
-  promptRefinement?: { phase: PromptRefinementPhase; disabled: boolean } | null;
+  /**
+   * Absent when refinement is turned off or unsupported. `visible` follows
+   * whether the draft has prose to rewrite; the button stays mounted so it can
+   * animate in and out.
+   */
+  promptRefinement?: { phase: PromptRefinementPhase; disabled: boolean; visible: boolean } | null;
   onTogglePromptRefinement?: () => void;
   onPreviousPendingQuestion: () => void;
   onInterrupt: () => void;
@@ -280,30 +284,39 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
 
   // One button for the whole round trip: refine, cancel while it runs, then
   // restore the original until the draft is edited.
+  const refineVisible =
+    promptRefinement != null && promptRefinement.visible && (!isRunning || hasSendableContent);
   const refineButton = promptRefinement ? (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <button
-            type="button"
-            className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-64 sm:h-8 sm:w-8"
-            {...pointerFocusProps}
-            disabled={promptRefinement.disabled || isSendBusy}
-            onClick={onTogglePromptRefinement}
-            aria-label={PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}
-          />
-        }
-      >
-        {promptRefinement.phase === "refining" ? (
-          <Spinner size="sm" aria-hidden="true" />
-        ) : promptRefinement.phase === "refined" ? (
-          <Undo2Icon className="size-4" aria-hidden="true" />
-        ) : (
-          <WandSparklesIcon className="size-4" aria-hidden="true" />
-        )}
-      </TooltipTrigger>
-      <TooltipPopup side="top">{PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}</TooltipPopup>
-    </Tooltip>
+    <span
+      className="composer-refine-slot"
+      data-visible={refineVisible}
+      aria-hidden={!refineVisible}
+    >
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none transition-colors duration-150 hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-64 sm:h-8 sm:w-8"
+              {...pointerFocusProps}
+              disabled={!refineVisible || promptRefinement.disabled || isSendBusy}
+              tabIndex={refineVisible ? undefined : -1}
+              onClick={onTogglePromptRefinement}
+              aria-label={PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}
+            />
+          }
+        >
+          {promptRefinement.phase === "refining" ? (
+            <Spinner size="sm" aria-hidden="true" />
+          ) : promptRefinement.phase === "refined" ? (
+            <Undo2Icon className="size-4" aria-hidden="true" />
+          ) : (
+            <WandSparklesIcon className="size-4" aria-hidden="true" />
+          )}
+        </TooltipTrigger>
+        <TooltipPopup side="top">{PROMPT_REFINEMENT_LABELS[promptRefinement.phase]}</TooltipPopup>
+      </Tooltip>
+    </span>
   ) : null;
 
   if (!isRunning) {
@@ -320,7 +333,7 @@ export const ComposerPrimaryActions = memo(function ComposerPrimaryActions({
   return (
     <>
       {renderStopGenerationButton(false)}
-      {hasSendableContent ? refineButton : null}
+      {refineButton}
       {hasSendableContent ? sendButton : null}
     </>
   );

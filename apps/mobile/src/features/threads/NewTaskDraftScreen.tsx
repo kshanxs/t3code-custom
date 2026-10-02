@@ -70,6 +70,7 @@ import { ComposerCommandPopover } from "./ComposerCommandPopover";
 import { useComposerCommandMenu } from "./use-composer-command-menu";
 import {
   ComposerRefineButton,
+  RefiningPromptShine,
   usePromptRefinement,
   useRefiningPromptStyle,
 } from "./prompt-refinement";
@@ -1693,6 +1694,7 @@ export function NewTaskDraftScreen(props: {
 
         <Animated.View className="px-[14px]" style={refiningPromptStyle}>
           {promptEditor}
+          <RefiningPromptShine phase={promptRefinement.phase} />
         </Animated.View>
         <View className="h-1" />
 

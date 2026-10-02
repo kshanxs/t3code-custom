@@ -34,8 +34,8 @@ See [images and videos](#images-and-videos-in-messages) for previewing and savin
 
 ## Refine a draft
 
-Use the wand button beside Send to have a model rewrite your draft so it is clearer
-for the agent. The rewrite replaces the draft in the composer and is never sent for
+Use the wand button beside Send to have a model rewrite your draft into a clearer,
+more detailed prompt for the agent. The rewrite replaces the draft in the composer and is never sent for
 you. Until you edit it, the same button restores your original. Editing the draft
 or pressing the button again while it works cancels the rewrite.
 

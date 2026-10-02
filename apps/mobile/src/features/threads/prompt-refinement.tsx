@@ -10,12 +10,17 @@ import {
 } from "@t3tools/client-runtime/state/runtime";
 import type { EnvironmentId, ProjectId, ServerConfig } from "@t3tools/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Pressable } from "react-native";
-import {
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
+import Animated, {
+  cancelAnimation,
+  Easing,
   ReduceMotion,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
   withTiming,
+  ZoomIn,
+  ZoomOut,
 } from "react-native-reanimated";
 
 import { SymbolView } from "../../components/AppSymbol";
@@ -131,6 +136,11 @@ export function usePromptRefinement(input: {
   };
 }
 
+const BUTTON_ENTERING = ZoomIn.duration(220)
+  .easing(Easing.out(Easing.back(1.8)))
+  .reduceMotion(ReduceMotion.System);
+const BUTTON_EXITING = ZoomOut.duration(140).reduceMotion(ReduceMotion.System);
+
 /** Sits beside the send button; one control for refine, cancel, and restore. */
 export function ComposerRefineButton(props: {
   readonly control: PromptRefinementControl;
@@ -140,47 +150,47 @@ export function ComposerRefineButton(props: {
   if (!control.visible) return null;
   const disabled = control.disabled || props.disabled === true;
   return (
-    <Pressable
-      accessibilityLabel={LABELS[control.phase]}
-      accessibilityRole="button"
-      accessibilityState={{ disabled, busy: control.phase === "refining" }}
-      className="size-[44px] shrink-0 items-center justify-center active:opacity-70"
-      disabled={disabled}
-      onPress={control.toggle}
-    >
-      {control.phase === "refining" ? (
-        <ActivityIndicator size="small" />
-      ) : (
-        <SymbolView
-          name={
-            control.phase === "refined"
-              ? "arrow.uturn.backward"
-              : { ios: "wand.and.stars", android: "auto_awesome" }
-          }
-          size={18}
-          weight="medium"
-          tintColorClassName={disabled ? "accent-icon-subtle" : "accent-icon"}
-          type="monochrome"
-        />
-      )}
-    </Pressable>
+    <Animated.View entering={BUTTON_ENTERING} exiting={BUTTON_EXITING}>
+      <Pressable
+        accessibilityLabel={LABELS[control.phase]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled, busy: control.phase === "refining" }}
+        className="size-[44px] shrink-0 items-center justify-center active:opacity-70"
+        disabled={disabled}
+        onPress={control.toggle}
+      >
+        {control.phase === "refining" ? (
+          <ActivityIndicator size="small" />
+        ) : (
+          <SymbolView
+            name={
+              control.phase === "refined"
+                ? "arrow.uturn.backward"
+                : { ios: "wand.and.stars", android: "auto_awesome" }
+            }
+            size={18}
+            weight="medium"
+            tintColorClassName={disabled ? "accent-icon-subtle" : "accent-icon"}
+            type="monochrome"
+          />
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const FLOAT_TIMING = { duration: 320, reduceMotion: ReduceMotion.System } as const;
 
 /**
- * Style for the view holding the prompt editor. The draft lifts and dims while
- * the model rewrites it, then the rewrite floats up into place. Each runs once
- * and holds, so nothing animates while the request is in flight.
+ * Style for the view holding the prompt editor. The draft greys out while the
+ * model rewrites it, then the rewrite floats up into place.
  */
 export function useRefiningPromptStyle(phase: PromptRefinementPhase) {
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
   useEffect(() => {
     if (phase === "refining") {
-      opacity.set(withTiming(0.5, FLOAT_TIMING));
-      translateY.set(withTiming(-6, FLOAT_TIMING));
+      opacity.set(withTiming(0.45, FLOAT_TIMING));
       return;
     }
     if (phase === "refined") {
@@ -194,4 +204,53 @@ export function useRefiningPromptStyle(phase: PromptRefinementPhase) {
     opacity: opacity.get(),
     transform: [{ translateY: translateY.get() }],
   }));
+}
+
+const SHINE_WIDTH_PERCENT = 36;
+
+/**
+ * A soft band that sweeps left to right over the greyed draft while it is
+ * being rewritten. Render it inside the view styled by `useRefiningPromptStyle`.
+ * It runs on the UI thread and only while refining.
+ */
+export function RefiningPromptShine(props: { readonly phase: PromptRefinementPhase }) {
+  const refining = props.phase === "refining";
+  const progress = useSharedValue(0);
+  useEffect(() => {
+    if (!refining) return;
+    progress.set(0);
+    progress.set(
+      withRepeat(
+        withTiming(1, {
+          duration: 1500,
+          easing: Easing.inOut(Easing.quad),
+          reduceMotion: ReduceMotion.System,
+        }),
+        -1,
+      ),
+    );
+    return () => cancelAnimation(progress);
+  }, [progress, refining]);
+  const bandStyle = useAnimatedStyle(() => ({
+    left: `${progress.get() * (100 + SHINE_WIDTH_PERCENT) - SHINE_WIDTH_PERCENT}%`,
+  }));
+  if (!refining) return null;
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      className="absolute inset-0 overflow-hidden"
+    >
+      {/* Three strips step the band's strength, standing in for a gradient. */}
+      <Animated.View
+        className="absolute inset-y-0 flex-row"
+        style={[{ width: `${SHINE_WIDTH_PERCENT}%` }, bandStyle]}
+      >
+        <View className="flex-1 bg-foreground/10" />
+        <View className="flex-1 bg-foreground/25" />
+        <View className="flex-1 bg-foreground/10" />
+      </Animated.View>
+    </View>
+  );
 }

@@ -93,6 +93,7 @@ import { resolveProviderOptionDescriptors } from "../../lib/providerOptions";
 import { ComposerCommandPopover } from "./ComposerCommandPopover";
 import {
   ComposerRefineButton,
+  RefiningPromptShine,
   usePromptRefinement,
   useRefiningPromptStyle,
 } from "./prompt-refinement";
@@ -881,6 +882,7 @@ export const ThreadComposer = memo(function ThreadComposer(props: ThreadComposer
                   color: foregroundColor,
                 }}
               />
+              <RefiningPromptShine phase={promptRefinement.phase} />
             </Animated.View>
             {!isExpanded && stripAttachments.length > 0 ? (
               <View className="flex-row gap-1 pl-1">
