@@ -2119,12 +2119,25 @@ code {
   }
 }
 
-/* Prompt refinement. The draft lifts and dims while the model rewrites it,
-   then the rewrite floats up into its place. Each runs once and holds, so
-   nothing repaints while the request is in flight. */
-@media (prefers-reduced-motion: no-preference) {
+/* Prompt refinement. While the model rewrites the draft it greys out and a
+   band of full-strength text sweeps left to right, then the rewrite floats up
+   into its place. The sweep is a mask, so chips and styled text shimmer with
+   the prose, and it is stepped like live-tool-shine to keep repaints cheap. */
+.composer-prompt-refining {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: no-preference) and (forced-colors: none) {
   .composer-prompt-refining {
-    animation: composer-prompt-float-away 320ms ease-out forwards;
+    opacity: 1;
+    mask-image: linear-gradient(
+      100deg,
+      rgb(0 0 0 / 0.38) 42%,
+      rgb(0 0 0 / 1) 50%,
+      rgb(0 0 0 / 0.38) 58%
+    );
+    mask-size: 300% 100%;
+    animation: composer-prompt-shine 1.5s steps(30) infinite;
   }
 
   .composer-prompt-refined {
@@ -2132,16 +2145,12 @@ code {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .composer-prompt-refining {
-    opacity: 0.5;
+@keyframes composer-prompt-shine {
+  from {
+    mask-position: 100% 0;
   }
-}
-
-@keyframes composer-prompt-float-away {
   to {
-    opacity: 0.5;
-    transform: translateY(-6px);
+    mask-position: 0% 0;
   }
 }
 
@@ -2149,6 +2158,49 @@ code {
   from {
     opacity: 0;
     transform: translateY(10px);
+  }
+}
+
+/* The refine button's slot beside Send. It takes its width at once and pops
+   the icon in, and on the way out the icon shrinks before the width goes, so
+   Send never slides under a half-visible button. */
+.composer-refine-slot {
+  display: flex;
+  width: 0;
+  margin-right: -0.5rem;
+  opacity: 0;
+  transform: scale(0.4) rotate(-45deg);
+  pointer-events: none;
+  transition:
+    opacity 140ms ease-in,
+    transform 140ms ease-in,
+    width 0s 140ms,
+    margin-right 0s 140ms;
+}
+
+.composer-refine-slot[data-visible="true"] {
+  /* Matches the button: h-9 w-9, sm:h-8 sm:w-8. */
+  width: 2.25rem;
+  margin-right: 0;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 180ms ease-out,
+    transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (width >= 40rem) {
+  .composer-refine-slot[data-visible="true"] {
+    width: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .composer-refine-slot,
+  .composer-refine-slot[data-visible="true"] {
+    transform: none;
+    transition: none;
   }
 }
 

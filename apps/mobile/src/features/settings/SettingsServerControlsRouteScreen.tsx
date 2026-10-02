@@ -393,7 +393,7 @@ function ServerSettingsDetail(props: { readonly page: SettingsPage }) {
                       subtitle={
                         projectSelected
                           ? "Environment-wide setting. Select All projects to change it."
-                          : "Show a button beside Send that rewrites your draft with the text generation model."
+                          : "Show a button beside Send that rewrites your draft into a clearer, more detailed prompt. Uses this environment's text generation model."
                       }
                       value={uniform("enablePromptRefinement")}
                       disabled={disabledFor("enablePromptRefinement")}

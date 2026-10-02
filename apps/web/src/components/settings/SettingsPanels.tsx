@@ -3270,7 +3270,7 @@ export function GeneralSettingsPanel() {
           serverScoped
           settingKeys={["enablePromptRefinement"]}
           {...searchableSetting("prompt-refinement")}
-          description="Show a button beside Send that rewrites your draft with the text generation model. You review the rewrite before sending."
+          description="Show a button beside Send that rewrites your draft into a clearer, more detailed prompt. It uses the text generation model selected above, and you review the rewrite before sending."
           resetAction={
             settings.enablePromptRefinement !== DEFAULT_UNIFIED_SETTINGS.enablePromptRefinement ? (
               <SettingResetButton

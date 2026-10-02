@@ -2567,13 +2567,14 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
         activePendingProgress.activeQuestion?.allowCustomAnswer !== false));
   const composerFooterHasWideActions = showPlanFollowUpPrompt || activePendingProgress !== null;
   // The plan follow-up and pending-question states own the primary action row.
-  const showPromptRefinement =
+  const promptRefinementAvailable =
     supportsPromptRefinement &&
     settings.enablePromptRefinement &&
     !showPlanFollowUpPrompt &&
     activePendingProgress === null &&
-    !isComposerApprovalState &&
-    stripInlineContextReferences(prompt).trim().length > 0;
+    !isComposerApprovalState;
+  const showPromptRefinement =
+    promptRefinementAvailable && stripInlineContextReferences(prompt).trim().length > 0;
   const composerFooterActionLayoutKey = useMemo(() => {
     if (activePendingProgress) {
       return `pending:${activePendingProgress.questionIndex}:${activePendingProgress.isLastQuestion}:${activePendingIsResponding}`;
@@ -7101,8 +7102,9 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     hasSendableContent={composerSendState.hasSendableContent}
                     preserveComposerFocusOnPointerDown={isMobileViewport || isComposerResting}
                     promptRefinement={
-                      showPromptRefinement
+                      promptRefinementAvailable
                         ? {
+                            visible: showPromptRefinement,
                             phase: promptRefinement.phase,
                             disabled:
                               promptRefinement.phase === "idle" &&
